@@ -27,15 +27,14 @@ import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.PageFilter;
 import org.apache.hadoop.hbase.util.Bytes;
 
-
 public class HBaseUtil {
 
     private ThreadLocal<Connection> connHolder;
 
-    public HBaseUtil(String hostName,String post) throws IOException {
+    public HBaseUtil(String hostName, String post) throws IOException {
         this.connHolder = new ThreadLocal<Connection>();
         Connection conn = connHolder.get();
-        if (conn == null){
+        if (conn == null) {
             Configuration conf = HBaseConfiguration.create();
             conf.set("hbase.zookeeper.quorum", hostName);
             conf.set("hbase.zookeeper.property.clientPort", post);
@@ -43,7 +42,6 @@ public class HBaseUtil {
             connHolder.set(conn);
         }
     }
-
 
     /**
      * 创建命名空间
@@ -53,17 +51,17 @@ public class HBaseUtil {
      */
     public void createNamespace(String namespace) throws IOException {
         Admin admin = this.connHolder.get().getAdmin();
-        NamespaceDescriptor namespaceDescriptor =
-                NamespaceDescriptor.create(namespace)
-                        .build();
+        NamespaceDescriptor namespaceDescriptor = NamespaceDescriptor.create(namespace)
+                .build();
         admin.createNamespace(namespaceDescriptor);
         admin.close();
     }
-    
+
     /**
      * 创建命名空间
+     * 
      * @param namespace
-     * @param configs 可以添加多个配置选项
+     * @param configs   可以添加多个配置选项
      * @throws IOException
      */
     public void createNamespace(String namespace, Map<String, String> configs) throws IOException {
@@ -113,38 +111,40 @@ public class HBaseUtil {
      * @throws IOException
      */
     public void createTable(String tableName, String[] families) throws IOException {
-        HBaseAdmin admin = (HBaseAdmin)this.connHolder.get().getAdmin();
+        HBaseAdmin admin = (HBaseAdmin) this.connHolder.get().getAdmin();
         if (admin.tableExists(tableName)) {
             System.out.println("This table exists.");
             admin.close();
             return;
         }
-        
+
         HTableDescriptor tableDescriptor = new HTableDescriptor(TableName.valueOf(tableName));
-        for(String family : families){
+        for (String family : families) {
             HColumnDescriptor columnDescriptor = new HColumnDescriptor(family);
             tableDescriptor.addFamily(columnDescriptor);
-        };
+        }
+        ;
         admin.createTable(tableDescriptor);
         admin.close();
     }
 
     /**
      * 为table新增列族的函数
+     * 
      * @param tableName
      * @param families
      * @throws IOException
      */
-    public void addColumnFamliy(String tableName, String[] families)throws IOException{
-        HBaseAdmin admin = (HBaseAdmin)this.connHolder.get().getAdmin();
+    public void addColumnFamliy(String tableName, String[] families) throws IOException {
+        HBaseAdmin admin = (HBaseAdmin) this.connHolder.get().getAdmin();
         if (!admin.tableExists(tableName)) {
             System.out.println("This table nos exist, please create it.");
             admin.close();
             return;
         }
         HTableDescriptor tableDesc = admin.getTableDescriptor(Bytes.toBytes(tableName));
-        for(String family : families){
-            tableDesc.addFamily(new HColumnDescriptor(Bytes.toBytes(family))); 
+        for (String family : families) {
+            tableDesc.addFamily(new HColumnDescriptor(Bytes.toBytes(family)));
         }
         admin.modifyTable(Bytes.toBytes(tableName), tableDesc);
         admin.close();
@@ -157,7 +157,7 @@ public class HBaseUtil {
      * @throws IOException
      */
     public void deleteTable(String tableName) throws IOException {
-        HBaseAdmin admin = (HBaseAdmin)this.connHolder.get().getAdmin();
+        HBaseAdmin admin = (HBaseAdmin) this.connHolder.get().getAdmin();
         admin.disableTable(tableName);
         admin.deleteTable(tableName);
         System.out.println("Table " + tableName + " deleted successfully.");
@@ -175,24 +175,25 @@ public class HBaseUtil {
      * @param isAppend  是否追加写，如果对应值不存在，则会新建；如果该值为false，则不论原来值是否存在都会覆盖写
      * @throws IOException
      */
-    public void putData(String tableName, String rowKey, String family, String qualifier, String value, boolean isAppend)
+    public void putData(String tableName, String rowKey, String family, String qualifier, String value,
+            boolean isAppend)
             throws IOException {
         Connection conn = this.connHolder.get();
         Table table = conn.getTable(TableName.valueOf(tableName));
-        if(!isAppend){
+        if (!isAppend) {
             // 创建 Put 对象并指定行键
             Put put = new Put(Bytes.toBytes(rowKey));
             // 添加列族、列标识符、值
             put.addColumn(Bytes.toBytes(family), Bytes.toBytes(qualifier), Bytes.toBytes(value));
             // 执行插入操作
             table.put(put);
-        }else{
+        } else {
             Append append = new Append(Bytes.toBytes(rowKey));
             append.add(Bytes.toBytes(family), Bytes.toBytes(qualifier), Bytes.toBytes(value));
             table.append(append);
         }
         table.close();
-        
+
     }
 
     /**
@@ -206,6 +207,19 @@ public class HBaseUtil {
         Connection conn = this.connHolder.get();
         Table table = conn.getTable(TableName.valueOf(tableName));
         table.put(puts);
+    }
+
+    /**
+     * 批量追加数据，需要提前将数据都正确地导入到append中，具体可参照putData中的实现使用append.add()批量新建append任务
+     * 
+     * @param tableName 表名
+     * @param puts      Put 对象列表
+     * @throws IOException
+     */
+    public void appendBatchData(String tableName, Append append) throws IOException {
+        Connection conn = this.connHolder.get();
+        Table table = conn.getTable(TableName.valueOf(tableName));
+        table.append(append);
     }
 
     /**
@@ -223,23 +237,26 @@ public class HBaseUtil {
         Table table = conn.getTable(TableName.valueOf(tableName));
         try {
             // 创建 Delete 对象，并指定要删除的行键、列族和列标识符
-            Delete delete = new Delete(Bytes.toBytes(rowKey)).addColumn(Bytes.toBytes(family), Bytes.toBytes(qualifier));
+            Delete delete = new Delete(Bytes.toBytes(rowKey)).addColumn(Bytes.toBytes(family),
+                    Bytes.toBytes(qualifier));
             // 调用 HTable 的 delete() 方法执行删除操作
             table.delete(delete);
         } finally {
-                // 关闭 HTable 资源
+            // 关闭 HTable 资源
             table.close();
         }
 
     }
+
     /**
      * 删除指定rowkey上整个列族的数据
+     * 
      * @param tableName
      * @param rowKey
      * @param family
      * @throws IOException
      */
-    public void deleteColumnFamily(String tableName, String rowKey, String family) throws IOException{
+    public void deleteColumnFamily(String tableName, String rowKey, String family) throws IOException {
         Connection conn = this.connHolder.get();
         Table table = conn.getTable(TableName.valueOf(tableName));
         try {
@@ -252,6 +269,7 @@ public class HBaseUtil {
             table.close();
         }
     }
+
     /**
      * 获取单行数据
      *
@@ -287,15 +305,15 @@ public class HBaseUtil {
      */
     public ResultScanner scanTable(String tableName, Filter filter, int pageSize) throws IOException {
         Connection conn = this.connHolder.get();
-            Table table = conn.getTable(TableName.valueOf(tableName));
-        try{
+        Table table = conn.getTable(TableName.valueOf(tableName));
+        try {
             // 创建扫描器对象
             Scan scan = new Scan();
             scan.setFilter(filter);
             scan.setCaching(pageSize);
             ResultScanner resultScanner = table.getScanner(scan);
             return resultScanner;
-        }finally{
+        } finally {
             table.close();
         }
     }
@@ -307,7 +325,7 @@ public class HBaseUtil {
      */
     public void close() throws IOException {
         Connection conn = connHolder.get();
-        if(conn!=null){
+        if (conn != null) {
             conn.close();
             connHolder.remove();
         }
