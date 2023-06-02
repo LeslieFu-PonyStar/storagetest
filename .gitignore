@@ -2,3 +2,4 @@
 /target
 *.sh
 WriteNewFileTest.java
+HBaseTest.javas
