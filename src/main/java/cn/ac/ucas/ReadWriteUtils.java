@@ -17,7 +17,7 @@ import java.nio.file.Paths;
  */
 public class ReadWriteUtils {
     /**
-     * 该函数用来将字节流新写入文件中，注意，这里是直接覆盖写的
+     * 该函数用来将字节流新写入文件中
      * @param data 输出字节流
      * @param fileName 新文件
      * @param isAppend 是否追加写
@@ -85,8 +85,5 @@ public class ReadWriteUtils {
         byte[] bytes = str.getBytes();
         InputStream inputStream = new ByteArrayInputStream(bytes);
         return inputStream;
-    }
-    public static void main(String[] args) {
-        
     }
 }

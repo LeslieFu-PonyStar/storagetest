@@ -102,10 +102,4 @@ public class HDFSUtil {
             e.printStackTrace();
         }
     }
-    public static void main(String[] args) {
-        String[] ss = {"1", "2", "3"};
-        for (String s : ss){
-            System.out.println(s);
-        }
-    }
 }
