@@ -330,4 +330,8 @@ public class HBaseUtil {
             connHolder.remove();
         }
     }
+    public static void main(String[] args) throws IOException {
+        HBaseUtil hBaseUtil = new HBaseUtil("myhbase", "2181");
+        hBaseUtil.putData("test_table", "cn.ac.ucas", "cf1", "major", "computer", false);
+    }
 }
