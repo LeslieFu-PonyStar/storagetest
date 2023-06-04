@@ -10,6 +10,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdfs.client.HdfsUtils;
 
 public class HDFSUtil {
     private FileSystem fs;
@@ -57,8 +58,10 @@ public class HDFSUtil {
             if (!this.fs.exists(outputPath)) {
                 System.out.println(hdfsPath + " is not exist. A new file will be created.\n");
                 outputStream = this.fs.create(outputPath);
+            }else{
+                outputStream = fs.append(outputPath);
             }
-            outputStream = fs.append(outputPath);
+            
         }
         byte[] buffer = new byte[bufferSize];
         int bytesRead = inputStream.read(buffer);
@@ -113,4 +116,5 @@ public class HDFSUtil {
             e.printStackTrace();
         }
     }
+
 }
